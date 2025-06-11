@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>辩题分析测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f8f9fa;
+    }
+    h1 {
+      color: #333;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .reference {
+      margin-top: 10px;
+      border-top: 1px dashed #aaa;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🗣️ 辩题分析工具</h1>
+
+<label for="topic">请输入辩题：</label>
+<br>
+<textarea id="topic" placeholder="例如：Trump's tax plan"></textarea>
+<br>
+<button onclick="analyze()">提交分析</button>
+
+<div id="output" class="result" style="display: none;">
+  <h2>🧠 分析结论：</h2>
+  <p id="conclusion"></p>
+  <h3>📚 参考文献：</h3>
+  <div id="references"></div>
+</div>
+
+<script>
+  async function analyze() {
+    const topic = document.getElementById("topic").value.trim();
+    if (!topic) {
+      alert("请输入一个辩题！");
+      return;
+    }
+
+    document.getElementById("output").style.display = "none";
+    document.getElementById("conclusion").innerText = "加载中...";
+    document.getElementById("references").innerHTML = "";
+
+    try {
+      const response = await fetch("http://localhost:3000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic })
+      });
+
+      const data = await response.json();
+
+      document.getElementById("output").style.display = "block";
+      document.getElementById("conclusion").innerText = data.conclusion;
+
+      const refs = data.references;
+      const refContainer = document.getElementById("references");
+      refContainer.innerHTML = "";
+
+      refs.forEach((ref, idx) => {
+        const refDiv = document.createElement("div");
+        refDiv.className = "reference";
+        refDiv.innerHTML = `
+          <strong>${idx + 1}. ${ref.title}</strong><br>
+          作者: ${ref.authors}<br>
+          发布时间: ${ref.published}<br>
+          来源: ${ref.source}
+        `;
+        refContainer.appendChild(refDiv);
+      });
+
+    } catch (err) {
+      alert("请求出错，请检查后端是否正常运行！");
+      console.error(err);
+    }
+  }
+</script>
+
+</body>
+</html>
