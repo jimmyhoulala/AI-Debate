@@ -41,17 +41,23 @@ function AgentCard({ agent, index, onNameChange }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <img
-        src={agent.avatar}
-        alt="avatar"
-        style={{
-          width: '50px',
-          height: '50px',
-          borderRadius: '50%',
-          objectFit: 'cover'
-        }}
-      />
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {/* 头像区域作为拖动手柄 */}
+      <div {...listeners}>
+        <img
+          src={agent.avatar}
+          alt="avatar"
+          style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '50%',
+            objectFit: 'cover',
+            cursor: 'grab'
+          }}
+        />
+      </div>
+
+      {/* 可编辑名称 */}
       <input
         type="text"
         value={agent.name}
@@ -59,14 +65,17 @@ function AgentCard({ agent, index, onNameChange }) {
         style={{
           flexGrow: 1,
           fontSize: '16px',
-          border: 'none',
-          background: 'transparent',
+          border: '1px solid #ddd',
+          padding: '4px 6px',
+          borderRadius: '4px',
+          backgroundColor: '#f9f9f9',
           outline: 'none'
         }}
       />
     </div>
   )
 }
+
 
 
 function AgentOrder({ agents, setAgents }) {

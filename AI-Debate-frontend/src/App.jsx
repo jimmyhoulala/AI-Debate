@@ -79,7 +79,7 @@ function App() {
           placeholder="例如：是否应禁止燃油车销售？"
         />
 
-        <h3 style={{ marginBottom: '10px' }}>智能体发言顺序（可拖动）</h3>
+        <h3 style={{ marginBottom: '10px' }}>智能体发言顺序（拉住头像可拖动）</h3>
         <AgentOrder agents={agents} setAgents={setAgents} />
 
         <button
