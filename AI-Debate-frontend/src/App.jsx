@@ -80,32 +80,49 @@ function App() {
 
   const handleNextPhase = async () => {
     if (phase === 'intro') {
-      setLoading(true);
+      setLoading(true)
       try {
         const res = await fetch('http://localhost:3001/api/debate_2', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, topic_id: topicId, agents })
-        });
-        const data = await res.json();
-        if (!res.ok || !data.success) throw new Error(data.error || '第二轮生成失败');
-
-        const msgs = data.dialogues.map(d => ({
-          name: d.name,
-          avatar: agents.find(a => a.name === d.name)?.avatar,
-          text: d.text,
-          references: d.references
-        }));
-        setDialogue(msgs);
-        setPhase('debate');
+          body: JSON.stringify({
+            topic,
+            topic_id: topicId,
+            agents: agents.map((a, idx) => ({ name: a.name, order: idx + 1 }))
+          })
+        })
+        const d = await res.json()
+        if (!res.ok || !d.success) throw new Error(d.error || '第二轮生成失败')
+        const msgs = d.dialogues.map(item => ({
+          name: item.name,
+          avatar: agents.find(a => a.name === item.name)?.avatar,
+          text: item.text,
+          references: item.references
+        }))
+        setDialogue(msgs)
+        setPhase('debate')
       } catch (err) {
-        alert('第二轮错误: ' + err.message);
+        alert('第二轮错误: ' + err.message)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
+    } else if (phase === 'debate') {
+      const summary = agents.map(a => ({
+        name: a.name,
+        avatar: a.avatar,
+        text: `我总结认为……`,
+      }))
+      summary.push({
+        name: '主持人',
+        avatar: '/src/assets/host.png',
+        text: '感谢各位参与，以下是我对整场辩论的总结……',
+      })
+      setDialogue(summary)
+      setPhase('summary')
+    } else if (phase === 'summary') {
+      setPhase('done')
     }
-    // summary 与 done 保持
-  };
+  }
 
 
   return (
@@ -132,7 +149,7 @@ function App() {
           onClick={handleStartDebate}
           disabled={loading}
         >
-          {loading ? '启动中...' : '开始辩论'}
+          {loading ? '启动中...' : '开始第一轮立论'}
         </button>
       </div>
       <div style={{ flex:5,padding:30,background:'#fff',borderLeft:'1px solid #ddd',overflowY:'auto' }}>
