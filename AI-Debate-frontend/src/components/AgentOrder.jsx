@@ -16,7 +16,16 @@ import {
 
 import { CSS } from '@dnd-kit/utilities'
 
-function AgentCard({ agent, index, onNameChange }) {
+// 可选角色列表（不可重复）
+const allRoles = [
+  '环保主义者',
+  '政策制定者',
+  '经济学家',
+  '技术乐观主义者',
+  '哲学评论者'
+]
+
+function AgentCard({ agent, index, onRoleChange, usedRoles }) {
   const {
     attributes,
     listeners,
@@ -42,7 +51,6 @@ function AgentCard({ agent, index, onNameChange }) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      {/* 头像区域作为拖动手柄 */}
       <div {...listeners}>
         <img
           src={agent.avatar}
@@ -57,26 +65,33 @@ function AgentCard({ agent, index, onNameChange }) {
         />
       </div>
 
-      {/* 可编辑名称 */}
-      <input
-        type="text"
+      <select
         value={agent.name}
-        onChange={(e) => onNameChange(index, e.target.value)}
+        onChange={(e) => onRoleChange(index, e.target.value)}
         style={{
           flexGrow: 1,
           fontSize: '16px',
           border: '1px solid #ddd',
-          padding: '4px 6px',
+          padding: '6px',
           borderRadius: '4px',
           backgroundColor: '#f9f9f9',
           outline: 'none'
         }}
-      />
+      >
+        <option value="">请选择角色</option>
+        {allRoles.map(role => (
+          <option
+            key={role}
+            value={role}
+            disabled={usedRoles.includes(role) && role !== agent.name}
+          >
+            {role}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }
-
-
 
 function AgentOrder({ agents, setAgents }) {
   const sensors = useSensors(useSensor(PointerSensor))
@@ -86,15 +101,18 @@ function AgentOrder({ agents, setAgents }) {
     if (active.id !== over.id) {
       const oldIndex = agents.findIndex((a) => a.id === active.id)
       const newIndex = agents.findIndex((a) => a.id === over.id)
-      setAgents((items) => arrayMove(items, oldIndex, newIndex))
+      const newAgents = arrayMove(agents, oldIndex, newIndex)
+      setAgents(newAgents)
     }
   }
 
-  const handleNameChange = (index, newName) => {
+  const handleRoleChange = (index, newRole) => {
     const updated = [...agents]
-    updated[index].name = newName
+    updated[index].name = newRole
     setAgents(updated)
   }
+
+  const usedRoles = agents.map(a => a.name).filter(n => n !== '')
 
   return (
     <DndContext
@@ -111,7 +129,8 @@ function AgentOrder({ agents, setAgents }) {
             key={agent.id}
             agent={agent}
             index={index}
-            onNameChange={handleNameChange}
+            onRoleChange={handleRoleChange}
+            usedRoles={usedRoles}
           />
         ))}
       </SortableContext>

@@ -3,17 +3,20 @@
 -- 所有 ID 字段为自增主键
 -- ========================================
 
--- 1. Agent 表：记录每个智能体的信息（角色、发言顺序）
-CREATE TABLE agents (
-    id INT AUTO_INCREMENT PRIMARY KEY,     -- 自增主键，Agent 唯一 ID
-    name VARCHAR(255) NOT NULL,            -- Agent 预设角色名（如“正方一辩”）
-    order_index INT NOT NULL               -- 发言顺序（从 1 开始）
-);
-
--- 2. 辩题表：记录每个辩题内容
+-- 1. 辩题表：记录每个辩题内容
 CREATE TABLE topics (
     id INT AUTO_INCREMENT PRIMARY KEY,     -- 自增主键，辩题 ID
     content TEXT NOT NULL                  -- 辩题文本内容
+);
+
+-- 2. Agent 表：记录每个智能体的信息（角色、发言顺序）
+CREATE TABLE agents (
+    id INT AUTO_INCREMENT PRIMARY KEY,     -- 自增主键，Agent 唯一 ID
+    topic_id INT NOT NULL,                 -- 外键，关联 topics(id)
+    name VARCHAR(255) NOT NULL,            -- Agent 预设角色名（如“正方一辩”）
+    order_index INT NOT NULL,              -- 发言顺序（从 1 开始）
+
+    FOREIGN KEY (topic_id) REFERENCES topics(id)
 );
 
 -- 3. 对话表：记录每一句发言及其元数据

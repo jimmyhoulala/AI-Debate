@@ -41,23 +41,43 @@
       border-top: 1px dashed #aaa;
       padding-top: 10px;
     }
+    .loading {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
 
-<h1>🗣️ 辩题分析工具</h1>
+<h1>🗣️ 三方辩论分析工具</h1>
 
 <label for="topic">请输入辩题：</label>
 <br>
-<textarea id="topic" placeholder="例如：Trump's tax plan"></textarea>
+<textarea id="topic" placeholder="例如：人工智能是否威胁人类就业"></textarea>
 <br>
 <button onclick="analyze()">提交分析</button>
 
+<div id="loading" class="loading" style="display: none;">
+  <div class="spinner"></div>
+  <p>分析中，请稍候...</p>
+</div>
+
 <div id="output" class="result" style="display: none;">
   <h2>🧠 分析结论：</h2>
-  <p id="conclusion"></p>
-  <h3>📚 参考文献：</h3>
-  <div id="references"></div>
+  <div id="results"></div>
 </div>
 
 <script>
@@ -68,41 +88,40 @@
       return;
     }
 
+    // 显示加载动画，隐藏输出
+    document.getElementById("loading").style.display = "block";
     document.getElementById("output").style.display = "none";
-    document.getElementById("conclusion").innerText = "加载中...";
-    document.getElementById("references").innerHTML = "";
 
     try {
-      const response = await fetch("http://localhost:3000/api/analyze", {
+      const response = await fetch("http://localhost:3000/api/debate_1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic })
+        body: JSON.stringify({
+          topic: topic,
+          agents: [
+            { name: "环保主义者", order: 1 },
+            { name: "经济学家", order: 2 },
+            { name: "政策制定者", order: 3 }
+          ]
+        })
       });
 
       const data = await response.json();
+      if (!data.success) {
+        throw new Error("分析失败");
+      }
 
+      // 获取最新辩题的结果（可通过额外接口查询结果；此处直接展示成功信息）
+      document.getElementById("loading").style.display = "none";
       document.getElementById("output").style.display = "block";
-      document.getElementById("conclusion").innerText = data.conclusion;
 
-      const refs = data.references;
-      const refContainer = document.getElementById("references");
-      refContainer.innerHTML = "";
-
-      refs.forEach((ref, idx) => {
-        const refDiv = document.createElement("div");
-        refDiv.className = "reference";
-        refDiv.innerHTML = `
-          <strong>${idx + 1}. ${ref.title}</strong><br>
-          作者: ${ref.authors}<br>
-          发布时间: ${ref.published}<br>
-          来源: ${ref.source}
-        `;
-        refContainer.appendChild(refDiv);
-      });
+      const resultDiv = document.getElementById("results");
+      resultDiv.innerHTML = `<p>主题「${topic}」分析完成，已成功存入系统。</p><p>（可以在系统后台查看结果）</p>`;
 
     } catch (err) {
-      alert("请求出错，请检查后端是否正常运行！");
       console.error(err);
+      document.getElementById("loading").style.display = "none";
+      alert("请求出错，请检查后端是否正常运行！");
     }
   }
 </script>
