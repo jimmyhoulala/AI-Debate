@@ -15,6 +15,9 @@ function App() {
   const [dialogue, setDialogue] = useState([])
   const [loading, setLoading] = useState(false)
 
+  // const [currentRound, setCurrentRound] = useState(1)
+  // const [currentAgentIndex, setCurrentAgentIndex] = useState(0)
+
   const handleStartDebate = async () => {
     if (!topic.trim()) {
       alert('请输入辩题')
@@ -123,6 +126,85 @@ function App() {
       setPhase('done')
     }
   }
+
+  // const handleNextPhase = async () => {
+  //   if (phase === 'intro') {
+  //   setPhase('debate');
+  //   await fetchNextDebateMessage({ 
+  //     debateRound: currentRound,
+  //     agentIndex: currentAgentIndex
+  //   });
+  // } else if (phase === 'debate') {
+  //     const summary = agents.map(a => ({
+  //       name: a.name,
+  //       avatar: a.avatar,
+  //       text: `我总结认为……`,
+  //     }));
+  //     summary.push({
+  //       name: '主持人',
+  //       avatar: '/src/assets/host.png',
+  //       text: '感谢各位参与，以下是我对整场辩论的总结……',
+  //     });
+  //     setDialogue(prev => [...prev, ...summary]);
+  //     setPhase('summary');
+  //   } else if (phase === 'summary') {
+  //     setPhase('done');
+  //   }
+  // };
+
+  // const fetchNextDebateMessage = async ({ debateRound, agentIndex }) => {
+  //   setLoading(true);
+
+  //   let round = debateRound;
+  //   let index = agentIndex;
+  //   let isComplete = false;
+
+  //   for (let i = 0; i < 9 && !isComplete; i++) {
+  //     try {
+  //       const res = await fetch('http://localhost:3001/api/debate_2', {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({
+  //           topic,
+  //           topic_id: topicId,
+  //           agents: agents.map((a, idx) => ({ name: a.name, order: idx + 1 })),
+  //           current_debate_round: round,
+  //           current_agent_index: index
+  //         })
+  //       });
+
+  //       const data = await res.json();
+
+  //       // 追加到已有发言之后
+  //       setDialogue(prev => [
+  //         ...prev,
+  //         {
+  //           id: `${Date.now()}-${data.dialogue.name}`,
+  //           name: data.dialogue.name,
+  //           avatar: agents.find(a => a.name === data.dialogue.name)?.avatar,
+  //           text: data.dialogue.text,
+  //           references: data.dialogue.references
+  //         }
+  //       ]);
+
+  //       // 更新索引状态
+  //       round = data.next_debate_round;
+  //       index = data.next_agent_index;
+  //       setCurrentRound(round);
+  //       setCurrentAgentIndex(index);
+  //       isComplete = data.is_complete;
+
+  //       if (!isComplete) await new Promise(r => setTimeout(r, 1000));
+  //     } catch (err) {
+  //       console.error('发言生成错误:', err);
+  //       alert('发言生成错误: ' + err.message);
+  //       break;
+  //     }
+  //   }
+
+  //   setLoading(false);
+  //   if (isComplete) handleNextPhase();
+  // };
 
 
   return (

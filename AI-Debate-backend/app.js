@@ -14,7 +14,7 @@ app.use(express.json());
 const db = mysql.createPool({
     host: "localhost",
     user: "root",
-    password: "557177Hou",
+    password: "123456",
     database: "AI-Debate",
 });
 
@@ -197,7 +197,127 @@ app.post("/api/debate_2", async (req, res) => {
   }
 });
 
+// app.post("/api/debate_2", async (req, res) => {
+//   const { 
+//     topic, 
+//     topic_id, 
+//     agents,
+//     current_debate_round = 1,  // 辩论轮次（1-3）
+//     current_agent_index = 0    // 当前发言的智能体索引
+//   } = req.body;
 
+//   // 参数验证
+//   if (!topic_id || !topic || !Array.isArray(agents)) {
+//     return res.status(400).json({ error: "缺少必要参数" });
+//   }
+
+//   try {
+//     console.log("=== 接收参数 ===");
+//     console.log({
+//       topic_id,
+//       current_debate_round,
+//       current_agent_index,
+//       agents: agents.map(a => a.name)
+//     });
+//     // 1. 获取所有历史发言
+//     const [rows] = await db.execute(
+//       `SELECT a.name, d.conclusion AS text, d.round_id, d.utterance_index
+//        FROM dialogues d JOIN agents a ON d.agent_id = a.id
+//        WHERE d.topic_id = ?
+//        ORDER BY d.round_id, d.utterance_index, a.order_index`,
+//       [topic_id]
+//     );
+
+//     // 2. 确定当前发言的智能体
+//     const agent = agents[current_agent_index];
+//     if (!agent) {
+//       throw new Error(`无效的智能体索引: ${current_agent_index}`);
+//     }
+
+//     // 3. 调用Python生成发言
+//     const prevJson = JSON.stringify(rows);
+//     const resultRaw = await new Promise((resolve, reject) => {
+//       execFile(
+//         "python",
+//         ["run_rebuttal.py", topic, agent.name, prevJson],
+//         { cwd: __dirname },
+//         (err, stdout, stderr) => {
+//           if (err) return reject(stderr || err.message);
+//           resolve(stdout);
+//         }
+//       );
+//     });
+//     const { agent: name, utterance, references } = JSON.parse(resultRaw);
+
+//     // 4. 存入数据库（关键修复）
+//     const [[agentRow]] = await db.execute(
+//       "SELECT id FROM agents WHERE topic_id = ? AND name = ?",
+//       [topic_id, name]
+//     );
+//     const agentId = agentRow.id;
+
+//     await db.execute(
+//       `INSERT INTO dialogues (
+//         topic_id, agent_id, round_id, 
+//         utterance_index, conclusion, references_json
+//       ) VALUES (?, ?, ?, ?, ?, ?)`,
+//       [
+//         topic_id,
+//         agentId,
+//         2,  // 固定为第二轮辩论
+//         current_debate_round,  // 使用当前辩论轮次作为utterance_index
+//         utterance,
+//         JSON.stringify(references)
+//       ]
+//     );
+
+//     // 5. 计算下一步状态（关键修复）
+//     let next_agent_index = current_agent_index + 1;
+//     let next_debate_round = current_debate_round;
+//     let is_complete = false;
+
+//     // 判断是否完成所有发言
+//     if (next_agent_index >= agents.length) {
+//       next_agent_index = 0;
+//       next_debate_round++;
+      
+//       // 完成3轮后结束
+//       if (next_debate_round > 3) {
+//         is_complete = true;
+//       }
+//     }
+//     console.log("=== 返回数据 ===");
+//     console.log({
+//       dialogue: {
+//         name,
+//         text: utterance.substring(0, 50) + "...", // 截取前50字符
+//         references
+//       },
+//       next_debate_round,
+//       next_agent_index,
+//       is_complete
+//     });
+//     // 6. 返回响应
+//     res.json({
+//       success: true,
+//       dialogue: {
+//         name,
+//         text: utterance,
+//         references
+//       },
+//       next_debate_round: next_debate_round, 
+//       next_agent_index: next_agent_index,
+//       is_complete: is_complete
+//     });
+
+//   } catch (e) {
+//     console.error("[辩论API错误]", e);
+//     res.status(500).json({ 
+//       error: e.message,
+//       stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+//     });
+//   }
+// });
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
