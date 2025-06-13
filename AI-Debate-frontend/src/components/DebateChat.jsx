@@ -36,7 +36,6 @@ function TypingMessage({ msg, index, isLeft, onFinish }) {
           margin: '4px 0',
           paddingLeft: isLeft ? '0' : '650px',
           paddingRight: isLeft ? '650px' : '0',
-
         }}
       >
         <img
@@ -57,10 +56,11 @@ function TypingMessage({ msg, index, isLeft, onFinish }) {
             fontSize: '15px',
             lineHeight: '1.4',
             whiteSpace: 'pre-wrap',
-            textAlign: 'left'
+            textAlign: 'left',
+            borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none'
           }}
         >
-          <strong>{msg.name}：</strong> {displayText}
+          <strong>{msg.name}{msg.isSummary ? '的总结' : ''}：</strong> {displayText}
         </div>
       </div>
     </div>
@@ -118,10 +118,11 @@ function DebateChat({ phase, dialogue, onNext }) {
                   fontSize: '15px',
                   lineHeight: '1.4',
                   whiteSpace: 'pre-wrap',
-                  textAlign: 'left'
+                  textAlign: 'left',
+                  borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none'
                 }}
               >
-                <strong>{msg.name}：</strong> {msg.text}
+                <strong>{msg.name}{msg.isSummary ? '的总结' : ''}：</strong> {msg.text}
               </div>
             </div>
           </div>

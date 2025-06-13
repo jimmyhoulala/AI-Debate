@@ -318,6 +318,79 @@ app.post("/api/debate_2", async (req, res) => {
 //     });
 //   }
 // });
+// 在app.js中添加以下API端点
+app.post("/api/debate_3", async (req, res) => {
+  const { topic, topic_id, agents } = req.body;
+  if (!topic_id || !topic || !Array.isArray(agents)) {
+    return res.status(400).json({ error: "参数缺失" });
+  }
+
+  try {
+    // 1. 从DB获取所有历史发言
+    const [rows] = await db.execute(
+      `SELECT a.name, d.conclusion AS text
+       FROM dialogues d JOIN agents a ON d.agent_id = a.id
+       WHERE d.topic_id = ?
+       ORDER BY d.round_id, a.order_index, d.utterance_index`,
+      [topic_id]
+    );
+    const previous = rows;
+
+    // 2. 为每个agent生成总结
+    const summaries = [];
+    for (const agent of agents) {
+      const prevJson = JSON.stringify(previous);
+      const resultRaw = await new Promise((resolve, reject) => {
+        execFile(
+          "python",
+          ["run_summary.py", topic, agent.name, prevJson],
+          { cwd: __dirname, encoding: "utf8" },
+          (err, stdout, stderr) => {
+            if (err) return reject(stderr || err.message);
+            resolve(stdout);
+          }
+        );
+      });
+      
+      const result = JSON.parse(resultRaw);
+      
+      // 3. 存入DB (round_id=3表示总结轮)
+      const [[agentRow]] = await db.execute(
+        "SELECT id FROM agents WHERE topic_id = ? AND name = ?",
+        [topic_id, agent.name]
+      );
+      const agentId = agentRow.id;
+
+      await db.execute(
+        `INSERT INTO dialogues (topic_id, agent_id, round_id, utterance_index, conclusion, references_json)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          topic_id,
+          agentId,
+          3,  // 第三轮总结
+          1,  // utterance_index固定为1
+          result.summary,
+          JSON.stringify(result.references)
+        ]
+      );
+
+      summaries.push({
+        name: agent.name,
+        text: result.summary,
+        references: result.references,
+        key_points: result.key_points
+      });
+    }
+
+    res.json({ success: true, summaries });
+  } catch (e) {
+    console.error("[总结API错误]", e);
+    res.status(500).json({ 
+      error: e.message,
+      stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+    });
+  }
+});
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);

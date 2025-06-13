@@ -40,3 +40,20 @@
 .read-the-docs {
   color: #888;
 }
+
+.summary-message {
+  border-left: 4px solid #4CAF50;
+  background-color: #f8f9fa;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.summary-message .name {
+  font-weight: bold;
+  color: #2E7D32;
+}
+
+.summary-message .text {
+  font-style: italic;
+}
