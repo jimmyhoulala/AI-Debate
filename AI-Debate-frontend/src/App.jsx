@@ -11,10 +11,17 @@ function App() {
     { id: '3', name: '经济学家', avatar: '/src/assets/agent3.png' }
   ])
 
+  const [summarizer] = useState({
+    id: '4',
+    name: '总结者',
+    avatar: '/src/assets/agent1.png'
+  });
+
   const [phase, setPhase] = useState(null)
   const [dialogue, setDialogue] = useState([])
   const [summaries, setSummaries] = useState([])
   const [loading, setLoading] = useState(false)
+  const [finalConclusion, setFinalConclusion] = useState(null)
 
   const handleStartDebate = async () => {
     if (!topic.trim()) {
@@ -25,6 +32,7 @@ function App() {
     // 清除之前的所有内容
     setDialogue([])
     setSummaries([])
+    setFinalConclusion(null)
     try {
       // 启动第一轮辩论
       const resp = await fetch('http://localhost:3001/api/debate_1', {
@@ -46,14 +54,14 @@ function App() {
       const res2 = await fetch(`http://localhost:3001/api/dialogues?topic_id=${tid}`)
       const d2 = await res2.json()
       if (!res2.ok || !d2.success) throw new Error(d2.error || '拉取对话失败')
-      
+
       setDialogue(d2.dialogue.map(item => ({
         name: item.name,
         avatar: agents.find(a => a.name === item.name)?.avatar,
         text: item.text,
         references: item.references
       })))
-      
+
       setPhase('intro')
     } catch (err) {
       alert(`启动失败：${err.message}`)
@@ -65,7 +73,6 @@ function App() {
 
   const handleFinalSummary = async () => {
     setLoading(true)
-    // 清除之前的对话内容，保留总结
     setDialogue([])
     try {
       const res = await fetch('http://localhost:3001/api/debate_3', {
@@ -99,11 +106,45 @@ function App() {
     }
   }
 
+  const handleFinalConclusion = async () => {
+    setLoading(true);
+    setDialogue([])
+    try {
+      const res = await fetch('http://localhost:3001/api/debate_4', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          topic_id: topicId,
+          agents: agents.map(a => ({ name: a.name, order: a.id }))
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || '最终总结生成失败');
+
+      // 将最终总结添加到对话中
+      setDialogue(prev => [...prev, {
+        name: '总结者',
+        avatar: summarizer.avatar,
+        text: data.conclusion,
+        references: data.references || [],
+        key_points: data.key_points || [],
+        isFinalConclusion: true
+      }]);
+
+      setPhase('conclusion');
+    } catch (err) {
+      alert(`最终总结生成失败: ${err.message}`);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNextPhase = async () => {
     if (phase === 'intro') {
       // 开始第二轮辩论
       setLoading(true)
-      // 清除之前的对话内容
       setDialogue([])
       try {
         const res = await fetch('http://localhost:3001/api/debate_2', {
@@ -117,14 +158,14 @@ function App() {
         })
         const d = await res.json()
         if (!res.ok || !d.success) throw new Error(d.error || '第二轮生成失败')
-        
+
         const msgs = d.dialogues.map(item => ({
           name: item.name,
           avatar: agents.find(a => a.name === item.name)?.avatar,
           text: item.text,
           references: item.references
         }))
-        
+
         setDialogue(msgs)
         setPhase('debate')
       } catch (err) {
@@ -136,7 +177,9 @@ function App() {
       // 开始第三轮总结
       await handleFinalSummary()
     } else if (phase === 'summary') {
-      // 结束辩论
+      // 开始第四轮最终总结
+      await handleFinalConclusion()
+    } else if (phase === 'conclusion') {
       setPhase('done')
     }
   }
@@ -148,16 +191,16 @@ function App() {
         <h2>多智能体辩论系统</h2>
         <label>请输入辩题：</label>
         <input
-          style={{ width:'100%', padding:8, margin:'10px 0 20px', border:'1px solid #ccc', borderRadius:6 }}
-          type="text" 
-          value={topic} 
+          style={{ width: '100%', padding: 8, margin: '10px 0 20px', border: '1px solid #ccc', borderRadius: 6 }}
+          type="text"
+          value={topic}
           onChange={e => setTopic(e.target.value)}
           placeholder="例如：是否应禁止燃油车销售？"
         />
-        
+
         <h3 style={{ fontSize: '1rem' }}>智能体发言顺序（拖动头像调整）</h3>
         <AgentOrder agents={agents} setAgents={setAgents} />
-        
+
         <button
           style={{
             marginTop: 20,
@@ -174,9 +217,9 @@ function App() {
           {loading ? '启动中...' : '开始第一轮立论'}
         </button>
       </div>
-      
+
       {/* 右侧辩论区域 */}
-      <div style={{ 
+      <div style={{
         flex: 5,
         padding: 30,
         background: '#fff',
@@ -185,11 +228,12 @@ function App() {
       }}>
         <h2>辩论区域</h2>
         {phase ? (
-          <DebateChat 
-            phase={phase} 
-            dialogue={dialogue} 
+          <DebateChat
+            phase={phase}
+            dialogue={dialogue}
             summaries={summaries}
-            onNext={handleNextPhase} 
+            finalConclusion={finalConclusion}
+            onNext={handleNextPhase}
           />
         ) : (
           <p style={{ color: '#777' }}>点击"开始辩论"进入第一阶段</p>

@@ -57,10 +57,15 @@ function TypingMessage({ msg, index, isLeft, onFinish }) {
             lineHeight: '1.4',
             whiteSpace: 'pre-wrap',
             textAlign: 'left',
-            borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none'
+            borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none',
+            borderRight: msg.isFinalConclusion ? '4px solid #FF9800' : 'none'
           }}
         >
-          <strong>{msg.name}{msg.isSummary ? '的总结' : ''}：</strong> {displayText}
+          <strong>
+            {msg.name}
+            {msg.isSummary ? '的总结' : ''}
+            {msg.isFinalConclusion ? '的最终结论' : ''}：
+          </strong> {displayText}
         </div>
       </div>
     </div>
@@ -119,10 +124,15 @@ function DebateChat({ phase, dialogue, onNext }) {
                   lineHeight: '1.4',
                   whiteSpace: 'pre-wrap',
                   textAlign: 'left',
-                  borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none'
+                  borderLeft: msg.isSummary ? '4px solid #4CAF50' : 'none',
+                  borderRight: msg.isFinalConclusion ? '4px solid #FF9800' : 'none'
                 }}
               >
-                <strong>{msg.name}{msg.isSummary ? '的总结' : ''}：</strong> {msg.text}
+                <strong>
+                  {msg.name}
+                  {msg.isSummary ? '的总结' : ''}
+                  {msg.isFinalConclusion ? '的最终结论' : ''}：
+                </strong> {msg.text}
               </div>
             </div>
           </div>
@@ -155,8 +165,10 @@ function DebateChat({ phase, dialogue, onNext }) {
             {phase === 'intro'
               ? '进入辩论阶段'
               : phase === 'debate'
-              ? '进入总结阶段'
-              : '完成辩论'}
+                ? '进入总结阶段'
+                : phase === 'summary'
+                  ? '生成最终结论'
+                  : '完成辩论'}
           </button>
         </div>
       )}
