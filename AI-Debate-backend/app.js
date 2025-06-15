@@ -14,7 +14,7 @@ app.use(express.json());
 const db = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "No2022051106",
+  password: "123456", // 请替换为你的 MySQL 密码
   database: "AI-Debate",
 });
 
