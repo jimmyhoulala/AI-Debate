@@ -14,7 +14,7 @@ function App() {
   const [summarizer] = useState({
     id: '4',
     name: '总结者',
-    avatar: '/src/assets/agent1.png'
+    avatar: '/src/assets/host.png'
   });
 
   const [phase, setPhase] = useState(null)
@@ -236,7 +236,7 @@ function App() {
             onNext={handleNextPhase}
           />
         ) : (
-          <p style={{ color: '#777' }}>点击"开始辩论"进入第一阶段</p>
+          <p style={{ color: '#777' }}>点击"开始第一轮立论"进入第一阶段</p>
         )}
       </div>
     </div>

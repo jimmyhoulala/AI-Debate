@@ -1,5 +1,5 @@
 -- ========================================
--- AI智能体辩论系统数据库结构定义（MySQL 版）
+-- AI智能体辩论系统数据库结构定义
 -- 所有 ID 字段为自增主键
 -- ========================================
 
@@ -13,7 +13,7 @@ CREATE TABLE topics (
 CREATE TABLE agents (
     id INT AUTO_INCREMENT PRIMARY KEY,     -- 自增主键，Agent 唯一 ID
     topic_id INT NOT NULL,                 -- 外键，关联 topics(id)
-    name VARCHAR(255) NOT NULL,            -- Agent 预设角色名（如“正方一辩”）
+    name VARCHAR(255) NOT NULL,            -- Agent 预设角色名
     order_index INT NOT NULL,              -- 发言顺序（从 1 开始）
 
     FOREIGN KEY (topic_id) REFERENCES topics(id)

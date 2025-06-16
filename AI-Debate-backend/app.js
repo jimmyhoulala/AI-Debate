@@ -1,8 +1,11 @@
-// server/app.js
+require('dotenv').config(); // 加载 .env 文件的内容到 process.env
 const express = require("express");
 const cors = require("cors");
 const { exec } = require("child_process");
 const mysql = require("mysql2/promise");
+const path = require('path');
+const fs = require('fs');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = 3001;
@@ -10,29 +13,16 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+
 // 创建数据库连接池
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "123456", // 请替换为你的 MySQL 密码
-  database: "AI-Debate",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
-// // Helper 函数：执行 Python 脚本
-// function runPython(script, args) {
-//     return new Promise((resolve, reject) => {
-//         const command = `python ${script} "${args.topic}" "${args.role}"`;
-//         exec(command, { cwd: __dirname }, (err, stdout, stderr) => {
-//             if (err) return reject(stderr);
-//             try {
-//                 const result = JSON.parse(stdout);
-//                 resolve(result);
-//             } catch (e) {
-//                 reject("Invalid JSON from Python");
-//             }
-//         });
-//     });
-// }
+
 
 const { execFile } = require("child_process");
 
@@ -57,7 +47,7 @@ function runPython(script, args) {
 }
 
 
-// API：执行三方辩论，并入库
+// 第一阶段立论
 app.post("/api/debate_1", async (req, res) => {
   const { topic, agents } = req.body;
   if (!topic || !Array.isArray(agents) || agents.length !== 3) {
@@ -103,7 +93,7 @@ app.post("/api/debate_1", async (req, res) => {
 
     return res.json({ success: true, topic_id: topicId });
   } catch (err) {
-    console.error("❌ API Error:", err);
+    console.error("API Error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -135,7 +125,7 @@ app.get('/api/dialogues', async (req, res) => {
   }
 });
 
-
+//第二阶段辩论
 app.post("/api/debate_2", async (req, res) => {
   const { topic, topic_id, agents } = req.body;
   if (!topic_id || !topic || !Array.isArray(agents)) {
@@ -197,128 +187,7 @@ app.post("/api/debate_2", async (req, res) => {
   }
 });
 
-// app.post("/api/debate_2", async (req, res) => {
-//   const { 
-//     topic, 
-//     topic_id, 
-//     agents,
-//     current_debate_round = 1,  // 辩论轮次（1-3）
-//     current_agent_index = 0    // 当前发言的智能体索引
-//   } = req.body;
-
-//   // 参数验证
-//   if (!topic_id || !topic || !Array.isArray(agents)) {
-//     return res.status(400).json({ error: "缺少必要参数" });
-//   }
-
-//   try {
-//     console.log("=== 接收参数 ===");
-//     console.log({
-//       topic_id,
-//       current_debate_round,
-//       current_agent_index,
-//       agents: agents.map(a => a.name)
-//     });
-//     // 1. 获取所有历史发言
-//     const [rows] = await db.execute(
-//       `SELECT a.name, d.conclusion AS text, d.round_id, d.utterance_index
-//        FROM dialogues d JOIN agents a ON d.agent_id = a.id
-//        WHERE d.topic_id = ?
-//        ORDER BY d.round_id, d.utterance_index, a.order_index`,
-//       [topic_id]
-//     );
-
-//     // 2. 确定当前发言的智能体
-//     const agent = agents[current_agent_index];
-//     if (!agent) {
-//       throw new Error(`无效的智能体索引: ${current_agent_index}`);
-//     }
-
-//     // 3. 调用Python生成发言
-//     const prevJson = JSON.stringify(rows);
-//     const resultRaw = await new Promise((resolve, reject) => {
-//       execFile(
-//         "python",
-//         ["run_rebuttal.py", topic, agent.name, prevJson],
-//         { cwd: __dirname },
-//         (err, stdout, stderr) => {
-//           if (err) return reject(stderr || err.message);
-//           resolve(stdout);
-//         }
-//       );
-//     });
-//     const { agent: name, utterance, references } = JSON.parse(resultRaw);
-
-//     // 4. 存入数据库（关键修复）
-//     const [[agentRow]] = await db.execute(
-//       "SELECT id FROM agents WHERE topic_id = ? AND name = ?",
-//       [topic_id, name]
-//     );
-//     const agentId = agentRow.id;
-
-//     await db.execute(
-//       `INSERT INTO dialogues (
-//         topic_id, agent_id, round_id, 
-//         utterance_index, conclusion, references_json
-//       ) VALUES (?, ?, ?, ?, ?, ?)`,
-//       [
-//         topic_id,
-//         agentId,
-//         2,  // 固定为第二轮辩论
-//         current_debate_round,  // 使用当前辩论轮次作为utterance_index
-//         utterance,
-//         JSON.stringify(references)
-//       ]
-//     );
-
-//     // 5. 计算下一步状态（关键修复）
-//     let next_agent_index = current_agent_index + 1;
-//     let next_debate_round = current_debate_round;
-//     let is_complete = false;
-
-//     // 判断是否完成所有发言
-//     if (next_agent_index >= agents.length) {
-//       next_agent_index = 0;
-//       next_debate_round++;
-
-//       // 完成3轮后结束
-//       if (next_debate_round > 3) {
-//         is_complete = true;
-//       }
-//     }
-//     console.log("=== 返回数据 ===");
-//     console.log({
-//       dialogue: {
-//         name,
-//         text: utterance.substring(0, 50) + "...", // 截取前50字符
-//         references
-//       },
-//       next_debate_round,
-//       next_agent_index,
-//       is_complete
-//     });
-//     // 6. 返回响应
-//     res.json({
-//       success: true,
-//       dialogue: {
-//         name,
-//         text: utterance,
-//         references
-//       },
-//       next_debate_round: next_debate_round, 
-//       next_agent_index: next_agent_index,
-//       is_complete: is_complete
-//     });
-
-//   } catch (e) {
-//     console.error("[辩论API错误]", e);
-//     res.status(500).json({ 
-//       error: e.message,
-//       stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
-//     });
-//   }
-// });
-// 在app.js中添加以下API端点
+// 第三阶段各自总结
 app.post("/api/debate_3", async (req, res) => {
   const { topic, topic_id, agents } = req.body;
   if (!topic_id || !topic || !Array.isArray(agents)) {
@@ -393,7 +262,7 @@ app.post("/api/debate_3", async (req, res) => {
 });
 
 
-
+//最后阶段由主持人格鲁最终总结
 app.post("/api/debate_4", async (req, res) => {
   const { topic, topic_id, agents } = req.body;
   if (!topic_id || !topic || !Array.isArray(agents)) {
@@ -427,7 +296,7 @@ app.post("/api/debate_4", async (req, res) => {
       [topic_id]
     );
 
-    // 3. 准备输入数据（关键修改）
+    // 3. 准备输入数据
     const inputData = {
       topic: topic,
       summaries: summaryRows.map(r => ({
@@ -488,8 +357,45 @@ app.post("/api/debate_4", async (req, res) => {
   }
 });
 
+//导出辩论结果
+app.get('/api/export-latest', (req, res) => {
+  const scriptPath = path.join(__dirname, 'export_debate.py');
+  const outputDir = path.join(__dirname, 'exports');
+  const zipPath = path.join(__dirname, 'debate_export.zip');
+
+  // 执行 Python 脚本
+  exec(`python ${scriptPath} --host ${process.env.DB_HOST} --user ${process.env.DB_USER} --password ${process.env.DB_PASSWORD} --database ${process.env.DB_NAME} --out-dir ${outputDir}`, (err, stdout, stderr) => {
+    if (err) {
+      console.error('导出失败:', stderr);
+      return res.status(500).send('导出失败');
+    }
+
+    // 使用 archiver 创建 zip 文件
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      res.download(zipPath, 'debate_export.zip', (downloadErr) => {
+        if (downloadErr) {
+          console.error('下载失败:', downloadErr);
+        }
+        fs.rmSync(zipPath, { force: true });
+        fs.rmSync(outputDir, { recursive: true, force: true });
+      });
+    });
+
+    archive.on('error', err => {
+      console.error('压缩失败:', err);
+      res.status(500).send('压缩失败');
+    });
+
+    archive.pipe(output);
+    archive.directory(outputDir, false);
+    archive.finalize();
+  });
+});
 
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

@@ -5,6 +5,10 @@ import time
 from requests.exceptions import SSLError, ChunkedEncodingError
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # 加载 .env 文件到环境变量
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -41,10 +45,10 @@ class RebuttalGenerator:
     def __init__(self, role):
         self.role = role
         self.llm = ChatOpenAI(
-            temperature=0.5,
+            temperature=0.2,
             model="gpt-4o-mini",
-            openai_api_key="sk-zk2c86662738a05b2a08eecd7c930008994682586cf9e781",
-            base_url="https://api.zhizengzeng.com/v1"
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE") 
         )
         self.retriever = ArxivQueryRun()
         self.role_profile = ROLE_PROFILES.get(role, ROLE_PROFILES["环保主义者"])
@@ -129,5 +133,5 @@ if __name__ == "__main__":
         result = agent.generate_one_utterance(topic, previous_json)
         print(result)
     except Exception as e:
-        print(f"❌ Error: {str(e)}", file=sys.stderr)
+        print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)

@@ -80,6 +80,32 @@ function DebateChat({ phase, dialogue, onNext }) {
     setCurrentIndex(0)
   }, [dialogue])
 
+  const handleNext = () => {
+    if (phase === 'done') {
+      // 下载最终文件
+      fetch('http://localhost:3001/api/export-latest')
+        .then(res => {
+          if (!res.ok) throw new Error('导出失败')
+          return res.blob()
+        })
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'debate_export.zip'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          window.URL.revokeObjectURL(url)
+        })
+        .catch(err => {
+          alert('下载失败：' + err.message)
+        })
+    } else {
+      onNext()
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {dialogue.slice(0, currentIndex).map((msg, i) => {
@@ -151,7 +177,7 @@ function DebateChat({ phase, dialogue, onNext }) {
       {isFinished && (
         <div style={{ textAlign: 'center', marginTop: '20px' }}>
           <button
-            onClick={onNext}
+            onClick={handleNext}
             style={{
               padding: '10px 20px',
               fontSize: '15px',

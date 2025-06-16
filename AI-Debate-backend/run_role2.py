@@ -6,6 +6,10 @@ import time
 from requests.exceptions import SSLError, ChunkedEncodingError
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # 加载 .env 文件到环境变量
 
 ROLE_PROFILES = {
     "环保主义者": {
@@ -40,8 +44,8 @@ class DynamicRAG:
         self.llm = llm or ChatOpenAI(
             temperature=0.2,
             model="gpt-4o-mini",
-            openai_api_key="sk-zk2c86662738a05b2a08eecd7c930008994682586cf9e781",
-            base_url="https://api.zhizengzeng.com/v1"
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            base_url=os.getenv("OPENAI_API_BASE") 
         )
         self.retriever = ArxivQueryRun()
         self.role = role if role in ROLE_PROFILES else "政策制定者"
